@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "CodeBuddy 子智能体",
+    "description": "通过 ACP 协议把单个任务委派给本机 CodeBuddy CLI。"
+  }
+}

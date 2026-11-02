@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "CodeBuddy subagent",
+    "description": "Delegate one task to the local CodeBuddy CLI over the Agent Client Protocol."
+  }
+}

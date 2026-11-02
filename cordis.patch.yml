@@ -1,0 +1,46 @@
+# CodeBuddy subagent bundle.
+#
+# Two rows, mirroring @deepseek-ai/dsh-subagent-claude-code:
+#   1. the provider — spawns `codebuddy --acp` and drives one ACP session;
+#   2. the delegation tool — exposes it to the model as `subagent_codebuddy`.
+#
+# The tool is this package's own (`./tool`), not the generic
+# `@deepseek-ai/dsh-tool-subagent`: it drives the same runtime activation path
+# but controls the wording, so the result says the child is already running and
+# that no tool can observe the run. The generic tool's hardcoded
+# `started subagent <id>` invites the model to poll `wait_agent`/`list_agents`,
+# which only track in-process teammates.
+#
+# Both rows belong here at the bundle's top level. Mounting the tool inside an
+# agent preset instead (e.g. `preset-cordis`) ties it to that preset: any profile
+# that does not ship that exact preset row fails to mount the tool at all, and
+# the provider is left with no way for the model to reach it.
+- insert:
+    - id: subagent-codebuddy
+      name: 'dsh-subagent-codebuddy'
+      config:
+        # auto-APPROVE the child's tool prompts so real tasks can act; use
+        # `reject` for a strictly read-only child.
+        permission: allow
+        startupTimeoutMs: 60000
+        envFile: ~/.dsh/secrets/codebuddy-api-key
+        # Which CodeBuddy site the key is validated against. The domestic
+        # (copilot.tencent.com) and international (codebuddy.ai) sites do not
+        # accept each other's keys, and the CLI picks the site from the
+        # machine's cached product config — so a machine that never ran the
+        # desktop app falls back to the international site and answers 401 for
+        # a perfectly valid key. Naming it here removes that dependency.
+        env:
+          CODEBUDDY_INTERNET_ENVIRONMENT: internal
+    - id: tool-subagent-codebuddy
+      name: 'dsh-subagent-codebuddy/tool'
+      config:
+        provider: codebuddy
+        toolName: subagent_codebuddy
+        # Required, and required to be EXPLICIT: omit the key and the harness
+        # falls back to its own numeric depth default, which the CodeBuddy
+        # provider cannot enforce (it advertises no `depthLimit` capability),
+        # so the row fails to activate with
+        #   provider "codebuddy" cannot enforce maxDepth ...
+        # `provider-managed` is the only valid value for an out-of-process child.
+        maxDepth: provider-managed

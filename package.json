@@ -1,0 +1,92 @@
+{
+  "name": "dsh-subagent-codebuddy",
+  "description": "DeepSeek Harness profile bundle: run subagent delegations in the local CodeBuddy CLI (ACP) with a pinned model",
+  "version": "0.2.1-rc.5",
+  "type": "module",
+  "main": "lib/index.js",
+  "bin": {
+    "codebuddy-runs": "./bin/codebuddy-runs.mjs"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./tool": "./lib/tool.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "icon.svg",
+    "locale/*.json",
+    "lib/**/*.js",
+    "bin/**/*.mjs",
+    "bin/lib/page.html",
+    "cordis.patch.yml"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "tsdown && node scripts/build-client.mjs",
+    "build:client": "node scripts/build-client.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
+    "version:dsh": "node scripts/sync-dsh-version.mjs",
+    "version:check": "node scripts/sync-dsh-version.mjs --check"
+  },
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.1-rc.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@deepseek-ai/dsh-session": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-subagent": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-subprocess": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-timeout": "^0.2.1-rc.3"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-sdk-protocol": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-tools": "^0.2.1-rc.3",
+    "@deepseek-ai/schemastery": "~3.18.5"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@deepseek-ai/dsh-llm": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-session": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-subagent": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-subprocess": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-timeout": "^0.2.1-rc.3",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "tsdown": "^0.14.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "keywords": [
+    "codebuddy",
+    "deepseek-harness",
+    "dsh",
+    "subagent",
+    "acp",
+    "agent"
+  ],
+  "author": "lloydzhou",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lloydzhou/dsh-subagent-codebuddy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lloydzhou/dsh-subagent-codebuddy/issues"
+  },
+  "homepage": "https://github.com/lloydzhou/dsh-subagent-codebuddy#readme"
+}

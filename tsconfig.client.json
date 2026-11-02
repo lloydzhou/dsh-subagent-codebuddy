@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node", "react"]
+  },
+  "include": [
+    "src/client",
+    "tests/client-definition.spec.ts",
+    "tests/client-format.spec.ts",
+    "tests/client-usage.spec.ts",
+    "tests/client-runs.spec.ts",
+    "tests/client-focus.spec.ts"
+  ],
+  "exclude": []
+}
