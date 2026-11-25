@@ -72,7 +72,8 @@ export function summarize(task: string, limit = 72): string {
  */
 export function metaText(data: CodebuddyRunData, now: number): string {
   const elapsed = isLiveStatus(data.status) ? now - data.startedAt : data.durationMs
-  return `${formatDuration(elapsed)} · ${STATUS_TEXT[data.status]}`
+  const state = `${formatDuration(elapsed)} · ${STATUS_TEXT[data.status]}`
+  return data.model === undefined ? state : `${state} · ${data.model}`
 }
 
 /**

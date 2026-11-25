@@ -151,6 +151,17 @@ describe('session listings', () => {
     expect(row?.sessionId).toBe('session-a')
   })
 
+  it('carries the pinned model a run was started with, and only when there is one', () => {
+    const pinned = freshChild()
+    const bare = freshChild()
+    beginProgress(pinned, 1_000, 1_000, { sessionId: 'session-model', model: 'deepseek-v4.1-flash' })
+    beginProgress(bare, 1_000, 1_000, { sessionId: 'session-model' })
+    const rows = readProgressBySession('session-model')
+    const found = Object.fromEntries(rows.map(row => [row.childId, row.model]))
+    expect(found[pinned]).toBe('deepseek-v4.1-flash')
+    expect(found[bare]).toBeUndefined()
+  })
+
   it('lists only the runs of the session asked for', () => {
     const mine = freshChild()
     const other = freshChild()

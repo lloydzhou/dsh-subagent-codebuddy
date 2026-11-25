@@ -13,6 +13,7 @@ import {
   CODEBUDDY_NODE_KIND,
   codebuddyRunDefinition as definition,
   readAddressedChild,
+  readModel,
   readPrompt,
   readResultCallId,
   readSettledChild,
@@ -89,6 +90,7 @@ function asMatch(event: object, role: 'start' | 'update') {
 }
 
 const ACTIVATION = `subagent_codebuddy is RUNNING as child_abc123 (迁移构建脚本).
+The child is pinned to model deepseek-v4.1-flash.
 The CodeBuddy child already has the task; this call returned when the child started, not when it finished.`
 
 describe('conversation definition matching', () => {
@@ -118,6 +120,13 @@ describe('conversation definition matching', () => {
     expect(readResultCallId({ message: { toolCallId: 'a' } })).toBe('a')
     expect(readResultCallId({ message: { source: { kind: 'tool', callId: 'b' } } })).toBe('b')
     expect(readResultCallId({})).toBeUndefined()
+  })
+
+  it('reads the pinned model off the activation notice, dots and all', () => {
+    // The id carries internal dots and the sentence ends in one, so the reader
+    // must bound the capture on the period after the id, not on whitespace.
+    expect(readModel(ACTIVATION)).toBe('deepseek-v4.1-flash')
+    expect(readModel('subagent_codebuddy is RUNNING as child_1 (probe).')).toBeUndefined()
   })
 
   it('ignores user messages that are not settlement notices', () => {

@@ -99,6 +99,8 @@ export interface CodebuddyRunData {
   readonly durationMs: number
   /** Child session id, read out of the activation notice when the result carries one. */
   readonly childId?: string
+  /** The model the child was pinned to, read from the same notice; absent when unset. */
+  readonly model?: string
   /** Cost line lifted out of the body; absent when the CLI printed none. */
   readonly usage?: CodebuddyUsage
 }
@@ -294,6 +296,18 @@ export function readSteps(output: string): readonly CodebuddyStep[] {
  */
 export function readChildId(output: string): string | undefined {
   return /RUNNING as (\S+)/.exec(output)?.[1]
+}
+
+/**
+ * The activation notice names the run's model ("… pinned to model <id>."), so
+ * the card's header meta can show which model the child was pinned to. The
+ * sentence-ending period is what bounds the capture — model ids carry internal
+ * dots, so the reader cannot stop at whitespace alone.
+ * @param output - rendered tool result.
+ * @returns the model id, or undefined when the notice says nothing about one.
+ */
+export function readModel(output: string): string | undefined {
+  return /pinned to model (\S+)\./.exec(output)?.[1]
 }
 
 /**
@@ -496,6 +510,7 @@ export const codebuddyRunDefinition = {
     const settled = state.settled === true
     const output = state.output ?? ''
     const childId = readChildId(output)
+    const model = readModel(output)
     const settledStatus: RunStatus = state.outcome === 'stopped'
       ? 'stopped'
       : state.outcome === 'refused' ? 'refused' : state.outcome === 'failed' ? 'failed' : 'done'
@@ -520,6 +535,7 @@ export const codebuddyRunDefinition = {
       startedAt: state.startedAt,
       durationMs: (state.finishedAt ?? Date.now()) - state.startedAt,
       ...(childId === undefined ? {} : { childId }),
+      ...(model === undefined ? {} : { model }),
       ...(usage === undefined ? {} : { usage }),
     }
     return {

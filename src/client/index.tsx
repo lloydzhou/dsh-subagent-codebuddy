@@ -17,9 +17,12 @@
  *   definition emits, so `kind: 'codebuddy-run'` and `key: 'codebuddy-run'` are
  *   two halves of the same lookup.
  *
- * The header action is a third, independent registration into a *list* slot:
- * entries there render side by side by ascending `order`, so this one sits after
- * the host's own subagent catalog (`order: 10`) instead of replacing it.
+ * The jump list is a third, independent registration into the session panel's
+ * section slot: the host builds its right sidebar from the same public slot
+ * (`environment` at order 0, `subagents` at order 200), and this one joins it
+ * at order 210. The host's own list renders external runs read-only — an
+ * out-of-process child has no session to open — so this section is where its
+ * runs stay clickable, jumping to their cards instead.
  *
  * A static `inject` makes this entry wait for those services instead of racing
  * them, which is what the loader expects; it stays pending (and the boot audit
@@ -27,7 +30,7 @@
  */
 
 import { codebuddyRunDefinition, CODEBUDDY_NODE_KIND } from './definition.ts'
-import { RunsHeaderAction } from './header.tsx'
+import { CodebuddyRunsSection } from './section.tsx'
 import { CodebuddyRunPanel } from './panel.tsx'
 
 /** Services the registration needs; the loader holds the entry until they exist. */
@@ -37,10 +40,11 @@ export const inject = ['slots', 'uiConversation', 'sessions']
 const CHAT_NODE_SLOT = 'conversation.chat.node'
 
 /**
- * The additive seat beside the session title. `order: 20` puts this entry to
- * the right of the host's own subagent catalog.
+ * The session panel's section slot: the host builds its right sidebar from it
+ * (`environment` at order 0, `subagents` at order 200), and sections are
+ * drag-reorderable by the reader afterwards.
  */
-const HEADER_SLOT = 'conversation.session.header.actions'
+const SECTION_SLOT = 'conversation.session.panel.section'
 
 /** The slice of the conversation service this module uses. */
 interface ConversationService {
@@ -69,8 +73,8 @@ interface ClientContext {
 }
 
 /**
- * Plugin body: publish the Definition, then the renderer that draws it, then the
- * header entry that jumps to it.
+ * Plugin body: publish the Definition, then the renderer that draws it, then
+ * the sidebar section that jumps to it.
  *
  * Every call is wrapped because a renderer is cosmetic: a duplicate `kind`
  * (a stale bundle still mounted) or a slot name the host no longer serves
@@ -95,13 +99,17 @@ export function apply(ctx: ClientContext): void {
   }
   try {
     const sessions = ctx.sessions
-    ctx.slots.inject(HEADER_SLOT, () => ctx.slots.register({
-      name: HEADER_SLOT,
+    ctx.slots.inject(SECTION_SLOT, () => ctx.slots.register({
+      name: SECTION_SLOT,
       id: 'codebuddy-runs',
-      order: 20,
-    }, (props: { sessionId?: string }) => (
-      <RunsHeaderAction
+      // After the host's own `subagents` (200): the two lists read as a pair,
+      // theirs first, ours where their read-only rows leave off.
+      order: 210,
+      label: () => 'CodeBuddy',
+    }, (props: { sessionId?: string, dismissOverlay?: () => void }) => (
+      <CodebuddyRunsSection
         {...props.sessionId === undefined ? {} : { sessionId: props.sessionId }}
+        {...props.dismissOverlay === undefined ? {} : { dismissOverlay: props.dismissOverlay }}
         // The card may sit in history the chat has not loaded; paging is a
         // session-scoped conversation op, and this closure is the only place
         // that can address it (`sessions.scope(id).conversation`).
@@ -109,6 +117,6 @@ export function apply(ctx: ClientContext): void {
       />
     )))
   } catch (error) {
-    console.error(`subagent-codebuddy: "${HEADER_SLOT}" action not registered`, error)
+    console.error(`subagent-codebuddy: "${SECTION_SLOT}" section not registered`, error)
   }
 }

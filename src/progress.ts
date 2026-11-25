@@ -66,6 +66,11 @@ export interface RunProgress {
   readonly sessionId?: string
   /** The caller's short label, so the list can name a run no card rendered. */
   readonly label?: string
+  /**
+   * The model the child was pinned to, when the provider passed one. An empty
+   * or absent value means the CLI chose its own session default.
+   */
+  readonly model?: string
 }
 
 /**
@@ -75,6 +80,7 @@ export interface RunProgress {
 export interface RunMeta {
   readonly sessionId?: string
   readonly label?: string
+  readonly model?: string
 }
 
 /**
@@ -156,6 +162,7 @@ export function beginProgress(
     dropped: 0,
     ...meta.sessionId === undefined ? {} : { sessionId: meta.sessionId },
     ...meta.label === undefined ? {} : { label: meta.label },
+    ...meta.model === undefined ? {} : { model: meta.model },
   })
   pruneProgress(now)
 }

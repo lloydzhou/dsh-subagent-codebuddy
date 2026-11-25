@@ -232,6 +232,9 @@ class CodebuddyProvider {
       // must still get its delegation.
       ...sessionId === undefined ? {} : { sessionId },
       ...request.label === undefined ? {} : { label: request.label },
+      // The pinned model id, for the card header and the header's jump list.
+      // An empty string means "CLI default": nothing to show.
+      ...(this.config.model === '' ? {} : { model: this.config.model }),
       spawn: (spec: SubprocessSpawnSpec) => this.ctx.subprocess.spawn(spec),
       onError: (error, stopReason) => {
         this.ctx.logger.warn(`subagent-codebuddy "${this.name}": child run failed (${stopReason}): ${error.message}`)

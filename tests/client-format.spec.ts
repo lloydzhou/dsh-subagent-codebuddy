@@ -65,6 +65,13 @@ describe('header meta', () => {
     expect(metaText(data({ status: 'refused', durationMs: 5000 }), 0)).toContain('被拒绝')
     expect(metaText(data({ status: 'failed', durationMs: 5000 }), 0)).toContain('失败')
   })
+
+  it('appends the pinned model after the state, only when there is one', () => {
+    expect(metaText(data({ status: 'delegated', model: 'deepseek-v4.1-flash' }), STARTED_AT + 12_000))
+      .toBe('12s · 后台运行中 · deepseek-v4.1-flash')
+    expect(metaText(data({ status: 'delegated' }), STARTED_AT + 12_000))
+      .toBe('12s · 后台运行中')
+  })
 })
 
 describe('liveness wording', () => {

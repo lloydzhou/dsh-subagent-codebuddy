@@ -52,10 +52,10 @@ describe('client bundle', () => {
     expect(typeof exports.apply).toBe('function')
   })
 
-  it.skipIf(!existsSync(BUNDLE))('registers the definition, the renderer, and the header jump entry', () => {
+  it.skipIf(!existsSync(BUNDLE))('registers the definition, the renderer, and the sidebar section', () => {
     const exports = materialize()
     const registered: unknown[] = []
-    const slots: Record<string, unknown>[] = []
+    const slots: unknown[] = []
     const ctx = {
       uiConversation: { events: { register: (definition: unknown) => registered.push(definition) } },
       sessions: { scope: () => undefined },
@@ -71,12 +71,16 @@ describe('client bundle', () => {
 
     expect(registered).toHaveLength(1)
     expect((registered[0] as { kind: string }).kind).toBe('codebuddy-run')
-    expect(slots).toEqual([
-      { name: 'conversation.chat.node', key: 'codebuddy-run' },
-      // Additive: an `id` and an `order` beside the host's own catalog entry
-      // (`order: 10`), never a replacement for it.
-      { name: 'conversation.session.header.actions', id: 'codebuddy-runs', order: 20 },
-    ])
+    expect(slots).toHaveLength(2)
+    expect(slots[0]).toEqual({ name: 'conversation.chat.node', key: 'codebuddy-run' })
+    // The host builds its right sidebar from the same public slot (`environment`
+    // at order 0, `subagents` at order 200); this section joins it after theirs,
+    // because their rows for external runs are click-through no-ops.
+    const section = slots[1] as { name?: string, id?: string, order?: number, label?: () => string }
+    expect(section.name).toBe('conversation.session.panel.section')
+    expect(section.id).toBe('codebuddy-runs')
+    expect(section.order).toBe(210)
+    expect(section.label?.()).toBe('CodeBuddy')
   })
 
   it.skipIf(!existsSync(BUNDLE))('stays active when a host surface is missing', () => {

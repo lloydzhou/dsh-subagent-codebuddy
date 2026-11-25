@@ -65,6 +65,17 @@ describe('readSessionRuns', () => {
     expect(only?.steps).toBe(49)
   })
 
+  it('carries the pinned model through, and only a real non-empty id', () => {
+    const [named] = readSessionRuns({ runs: [row({ model: 'deepseek-v4.1-flash' })] }, SESSION)
+    expect(named?.model).toBe('deepseek-v4.1-flash')
+    // Absent, empty, and non-string values all read as "no model": an older
+    // provider build never recorded one, and the row hides the line instead.
+    for (const bad of [undefined, '', 42]) {
+      const [clean] = readSessionRuns({ runs: [row({ model: bad })] }, SESSION)
+      expect(clean?.model).toBeUndefined()
+    }
+  })
+
   it('ignores rows from another session', () => {
     const rows = readSessionRuns({ runs: [row({ sessionId: 'other' })] }, SESSION)
     expect(rows).toEqual([])
