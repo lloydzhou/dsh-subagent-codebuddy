@@ -116,6 +116,19 @@ export function useRunPick(options: {
       onPicked?.()
       return
     }
+    // Registry miss, mounted anyway: the feed's run id and the card's
+    // registered id are the same string in practice, but a card that mounted
+    // between polls (or whose handle is mid-swap) would fall through here —
+    // find it by the attribute the panel paints on its root and treat the
+    // jump as done. A card with no id (a start-up failure never registered
+    // one) has no attribute and stays unfound, which is correct: it has no
+    // record to show.
+    const orphan = document.querySelector(`[data-codebuddy-child="${CSS.escape(childId)}"]`)
+    if (orphan !== null) {
+      orphan.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      onPicked?.()
+      return
+    }
     // Paging history only means something while the chat is the view on
     // screen; from the trajectory tab there is no scrollport to grow, and
     // pulling twelve pages would spend requests on nothing.

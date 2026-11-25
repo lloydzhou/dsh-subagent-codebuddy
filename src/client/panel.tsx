@@ -249,7 +249,17 @@ export function CodebuddyRunPanel({ node }: PanelProps) {
     const dispose = registerCard(childId, {
       expand: () => setOpen(true),
       reveal: () => {
-        sectionRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        // The scroll must wait for the expansion this jump just asked for: on
+        // a collapsed card the body renders only after React commits, and a
+        // same-tick scrollIntoView measures the collapsed shell — the layout
+        // change then cancels the smooth scroll and the card never moves
+        // (observed on the sidebar's jump list). Two frames: one for the
+        // commit, one for the layout it produces.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            sectionRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+          })
+        })
       },
       flash: () => {
         setFlash(true)
