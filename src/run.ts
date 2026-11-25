@@ -60,6 +60,12 @@ export interface CodebuddyRunSpec {
   sessionId?: string
   /** The caller's short label, for a list row no card has painted. */
   label?: string
+  /**
+   * The model the child was pinned to, when configured as a non-empty id.
+   * Carried so the card's header and the header's jump list can both name the
+   * model a run used; absent means the CLI chose its own session default.
+   */
+  model?: string
   spawn(spec: SubprocessSpawnSpec): SubprocessHandle
   onError?: (error: Error, stopReason: SubagentStopReason) => void
 }
@@ -253,6 +259,7 @@ export async function startCodebuddyRun(request: SubagentStartRequest, spec: Cod
   beginProgress(String(runId), startedAt, Date.now(), {
     ...spec.sessionId === undefined ? {} : { sessionId: spec.sessionId },
     ...spec.label === undefined ? {} : { label: spec.label },
+    ...spec.model === undefined ? {} : { model: spec.model },
   })
   // Startup rollback and the published handle share one process teardown.
   let processDisposal: Promise<void> | undefined

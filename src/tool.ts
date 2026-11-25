@@ -20,6 +20,7 @@
 import z from '@deepseek-ai/schemastery'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
+import { readProgress } from './progress.js'
 import { findLiveRun, liveRunIds } from './steer.js'
 
 export const name = 'tool-subagent-codebuddy'
@@ -97,9 +98,13 @@ export const STEER_DESCRIPTION = [
  * @param label - the short task label the caller supplied.
  * @returns the rendered tool result.
  */
-export function activationNotice(subagentId: string, label: string): string {
+export function activationNotice(subagentId: string, label: string, model?: string): string {
   return [
     `subagent_codebuddy is RUNNING as ${subagentId} (${label}).`,
+    // The pinned model id, so the card's header meta can name it; the sentence
+    // ends in a period that is NOT part of the id, which is what the card's
+    // reader (`/pinned to model (\S+)\./`) leans on.
+    ...(model === undefined ? [] : [`The child is pinned to model ${model}.`]),
     'The CodeBuddy child already has the task; this call returned when the child started, not when it finished.',
     'No tool tracks this run — wait_agent and list_agents cover only in-process teammates and one-shot local children —',
     'so do not poll them and do not sleep.',
@@ -175,9 +180,13 @@ export function apply(ctx: Context, config: Config): void {
         properties: {
           kind: { type: 'string', required: true, const: 'activation' },
           subagentId: { type: 'string', required: true },
+          model: { type: 'string' },
         },
       },
-      render: (args, value) => [{ type: 'text', text: activationNotice(value.subagentId, args.description) }],
+      render: (args, value) => [{
+        type: 'text',
+        text: activationNotice(value.subagentId, args.description, value.model),
+      }],
     },
     isConcurrencySafe: () => true,
     async execute(args, exec) {
@@ -186,18 +195,41 @@ export function apply(ctx: Context, config: Config): void {
       if (ctx.subagents.getProvider(resolved.provider) === undefined) {
         throw new Error(`subagent-codebuddy: provider "${resolved.provider}" is not registered`)
       }
-      const activation = await ctx.subagents.startActivation({
+      const task = { type: 'text' as const, text: args.prompt }
+      const cwd = args.cwd === undefined ? {} : { cwd: args.cwd }
+      // dsh-subagent 0.2.3-alpha.2 flattened the activation spec: `parent`,
+      // `prompt`, and `cwd` moved from `request` onto the spec itself, and
+      // `startActivation` now reads `spec.parent.id` first — a spec carrying
+      // only the nested `request` dies there with
+      // "Cannot read properties of undefined (reading 'id')" before the
+      // provider ever runs. Send BOTH shapes: <= 0.2.2 hosts read `request`
+      // and ignore the flat fields; >= 0.2.3 hosts read the flat fields and
+      // the unread nested `request` lands in the provider's start request as
+      // an ignored extra key.
+      const spec = {
         provider: resolved.provider,
         label: args.description,
-        request: {
-          prompt: [{ type: 'text', text: args.prompt }],
-          parent,
-          ...(args.cwd === undefined ? {} : { cwd: args.cwd }),
-        },
+        parent,
+        prompt: [task],
+        ...cwd,
+        request: { prompt: [task], parent, ...cwd },
         signal: exec.signal,
-        delivery: 'parent',
-      })
-      return { kind: 'activation' as const, subagentId: String(activation.childId) }
+        delivery: 'parent' as const,
+      }
+      const activation = await ctx.subagents.startActivation(
+        spec as Parameters<typeof ctx.subagents.startActivation>[0],
+      )
+      // The provider opened the run's feed inside startActivation, so the
+      // pinned model — one config, one source of truth — is already on record
+      // under this child's id. Absent (or the CLI-default empty string) means
+      // the notice says nothing about the model.
+      const subagentId = String(activation.childId)
+      const model = readProgress([subagentId])[subagentId]?.model
+      return {
+        kind: 'activation' as const,
+        subagentId,
+        ...(model === undefined ? {} : { model }),
+      }
     },
   })
   const steerDefinition = defineTool({

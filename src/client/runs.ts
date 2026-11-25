@@ -41,6 +41,8 @@ export interface RunRow {
   readonly endedAt?: number
   /** Last time anything happened, used to age the row. */
   readonly updatedAt: number
+  /** The model the child was pinned to; absent when the run recorded none. */
+  readonly model?: string
 }
 
 /** How long a run's row says it has been going, or took. */
@@ -128,6 +130,7 @@ export function readSessionRuns(payload: unknown, sessionId: string): RunRow[] {
       startedAt: typeof record.startedAt === 'number' ? record.startedAt : 0,
       updatedAt: typeof record.updatedAt === 'number' ? record.updatedAt : 0,
       ...endedAt === undefined ? {} : { endedAt },
+      ...(typeof record.model === 'string' && record.model !== '' ? { model: record.model } : {}),
     })
   }
   return rows

@@ -11,6 +11,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Config, DESCRIPTION, activationNotice, apply, steerNotice } from '../src/tool.js'
+import { beginProgress } from '../src/progress.js'
 import { findLiveRun, registerLiveRun } from '../src/steer.js'
 
 interface Registered {
@@ -79,6 +80,14 @@ describe('subagent_codebuddy result wording', () => {
     expect(notice).not.toMatch(/finished\.\s*$/i)
     expect(notice).toMatch(/arrives in this conversation by itself/)
   })
+
+  it('names the pinned model when one was configured', () => {
+    const notice = activationNotice('sess-8', 'probe', 'deepseek-v4.1-flash')
+    // The sentence-final period bounds the card's own capture; the id itself
+    // carries dots, so the wording must keep the two apart.
+    expect(notice).toMatch(/pinned to model deepseek-v4\.1-flash\./)
+    expect(activationNotice('sess-8', 'probe')).not.toMatch(/pinned to model/)
+  })
 })
 
 describe('subagent_codebuddy description', () => {
@@ -118,6 +127,39 @@ describe('mounting', () => {
     expect(value).toEqual({ kind: 'activation', subagentId: 'child-9' })
     expect((starts[0] as { delivery: string }).delivery).toBe('parent')
     expect((starts[0] as { provider: string }).provider).toBe('codebuddy')
+  })
+
+  it('carries the parent flat and nested so both host generations find it', async () => {
+    // dsh-subagent 0.2.3 flattened the spec and reads `spec.parent.id` before
+    // anything else; a spec that only nests it under `request` dies there with
+    // "Cannot read properties of undefined (reading 'id')" before the child
+    // starts. Hosts <= 0.2.2 read `spec.request.parent` and ignore the flat
+    // copy, so the activation must carry both.
+    const { ctx, registered, starts } = fakeContext({ childId: 'child-9' })
+    apply(ctx as never, Config({}))
+    await toolNamed(registered, 'subagent_codebuddy').execute({ description: 'probe', prompt: 'do it' }, exec)
+    const spec = starts[0] as {
+      parent?: unknown
+      prompt?: unknown[]
+      request?: { parent?: unknown, prompt?: unknown[] }
+    }
+    expect(spec.parent).toBe(exec.agent)
+    expect(spec.request?.parent).toBe(exec.agent)
+    expect(spec.prompt).toEqual([{ type: 'text', text: 'do it' }])
+    expect(spec.request?.prompt).toEqual([{ type: 'text', text: 'do it' }])
+  })
+
+  it('carries the feed record of the pinned model into the payload and notice', async () => {
+    // The provider records the model on the run's feed inside startActivation;
+    // the tool reads it back so the card's header and the jump list can both
+    // name the model from one source of truth.
+    const { ctx, registered } = fakeContext({ childId: 'child-pinned' })
+    beginProgress('child-pinned', 1_000, 1_000, { model: 'deepseek-v4.1-flash' })
+    apply(ctx as never, Config({}))
+    const value = await toolNamed(registered, 'subagent_codebuddy').execute({ description: 'probe', prompt: 'do it' }, exec)
+    expect(value).toEqual({ kind: 'activation', subagentId: 'child-pinned', model: 'deepseek-v4.1-flash' })
+    const text = toolNamed(registered, 'subagent_codebuddy').output.render({ description: 'probe' }, value)[0]!.text
+    expect(text).toMatch(/pinned to model deepseek-v4\.1-flash\./)
   })
 
   it('renders the running notice, not a bare id', async () => {

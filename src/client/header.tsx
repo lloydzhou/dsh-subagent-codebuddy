@@ -121,6 +121,21 @@ function RunLine({
       <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {rowTitle(row)}
       </span>
+      {row.model === undefined ? null : (
+        // The pinned model, muted so it reads as metadata. Capped with its own
+        // ellipsis: a long id squeezes the title, which is the expendable half.
+        <span style={{
+          flex: 'none',
+          maxWidth: 130,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          fontSize: 11,
+          opacity: 0.45,
+        }}>
+          {row.model}
+        </span>
+      )}
       <span style={{ flex: 'none', fontSize: 11.5, opacity: 0.55 }}>
         {busy ? '查找中…' : detail}
       </span>
