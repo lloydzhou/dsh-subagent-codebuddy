@@ -1,7 +1,7 @@
 {
   "name": "dsh-subagent-codebuddy",
   "description": "DeepSeek Harness profile bundle: run subagent delegations in the local CodeBuddy CLI (ACP) with a pinned model",
-  "version": "0.2.2-rc.3",
+  "version": "0.2.3-alpha.2",
   "type": "module",
   "main": "lib/index.js",
   "bin": {
@@ -11,6 +11,7 @@
     ".": "./lib/index.js",
     "./tool": "./lib/tool.js",
     "./client": "./lib/client.js",
+    "./icon": "./icon.svg",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json",
     "./cordis.patch.yml": "./cordis.patch.yml"
